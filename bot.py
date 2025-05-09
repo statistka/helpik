@@ -138,7 +138,7 @@ if __name__ == "__main__":
     import asyncio
 
     async def on_startup():
-        logging.info(f"Setting webhook to {WEBHOOK_URL}")
+        logging.info("Setting webhook to {WEBHOOK_URL}")
         await bot.set_webhook(WEBHOOK_URL)
 
     asyncio.run(on_startup())
