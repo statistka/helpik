@@ -1,29 +1,42 @@
 import os
 import json
 import logging
+import re
 from datetime import datetime
-from telegram import Update
+
+from fastapi import FastAPI, Request, Response
+from telegram import Update, Bot
 from telegram.ext import (
-    ApplicationBuilder,
+    Application,
     CommandHandler,
     MessageHandler,
     ContextTypes,
-    filters
+    filters,
 )
 
 from sheets_connector import (
     write_meal,
     write_hydration,
     write_vitamins,
-    write_workout
+    write_workout,
 )
 from kcal_parser import parse_kcal
 
 logging.basicConfig(level=logging.INFO)
 
+# Переменные окружения
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 SPREADSHEET_ID = os.getenv("SPREADSHEET_ID")
 GOOGLE_CREDS_JSON = json.loads(os.getenv("GOOGLE_CREDS_JSON"))
+
+# Railway предоставляет публичный URL в RAILWAY_STATIC_URL (или задайте вручную)
+RAILWAY_URL = os.getenv("RAILWAY_STATIC_URL")  # например yourproject.up.railway.app
+WEBHOOK_PATH = "/webhook"
+WEBHOOK_URL = f"https://{RAILWAY_URL}{WEBHOOK_PATH}"
+
+app = FastAPI()
+bot = Bot(token=TOKEN)
+application = Application.builder().token(TOKEN).build()
 
 def extract_date_and_text(message: str):
     message = message.strip()
@@ -58,7 +71,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("🍽 Питание записано!")
 
     elif message.startswith("вода:"):
-        import re
         water_ml = 0
         caffeine_ml = 0
 
@@ -83,7 +95,17 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parts = text_body.split(",")
         workout_data = {}
         for part in parts:
-            for activity in ["разминка", "бег интенсивный", "бег лёгкий", "силовая", "йога", "велосипед", "плавание", "хайкинг", "ходьба"]:
+            for activity in [
+                "разминка",
+                "бег интенсивный",
+                "бег лёгкий",
+                "силовая",
+                "йога",
+                "велосипед",
+                "плавание",
+                "хайкинг",
+                "ходьба",
+            ]:
                 if activity in part:
                     try:
                         minutes = int(part.split(activity)[1].split("мин")[0].strip())
@@ -94,34 +116,30 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("🏃‍♀️ Нагрузка записана!")
 
     else:
-        await update.message.reply_text("Не могу распознать сообщение. Попробуй: 'завтрак: ...', 'вода: ...', 'витамины: ...', 'нагрузка: ...'")
-
-def get_application():
-    app = ApplicationBuilder().token(TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    return app
-
-if __name__ == "__main__":
-    import asyncio
-
-    PORT = int(os.getenv("PORT", 8443))
-    WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # например, https://yourdomain.com/telegram_webhook
-
-    if not TOKEN or not WEBHOOK_URL:
-        logging.error("Не установлены TELEGRAM_TOKEN или WEBHOOK_URL")
-        exit(1)
-
-    app = get_application()
-
-    async def main():
-        await app.bot.set_webhook(WEBHOOK_URL)
-        await app.run_webhook(
-            listen="0.0.0.0",
-            port=PORT,
-            webhook_url=WEBHOOK_URL,
-            cert=None  # или путь к сертификату, если нужен
+        await update.message.reply_text(
+            "Не могу распознать сообщение. Попробуй: 'завтрак: ...', 'вода: ...', 'витамины: ...', 'нагрузка: ...'"
         )
 
-    asyncio.run(main())
+# Добавляем хендлеры в приложение
+application.add_handler(CommandHandler("start", start))
+application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
+# Обработка POST-запросов от Telegram
+@app.post(WEBHOOK_PATH)
+async def telegram_webhook(request: Request):
+    data = await request.json()
+    update = Update.de_json(data, bot)
+    await application.process_update(update)
+    return Response(status_code=200)
+
+# Запуск приложения и установка вебхука
+if __name__ == "__main__":
+    import uvicorn
+    import asyncio
+
+    async def on_startup():
+        logging.info(f"Setting webhook to {WEBHOOK_URL}")
+        await bot.set_webhook(WEBHOOK_URL)
+
+    asyncio.run(on_startup())
+    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 8000)))
