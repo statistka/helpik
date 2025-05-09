@@ -37,7 +37,7 @@ def extract_date_and_text(message: str):
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "👋 Привет! Я Helpik — твой трекер питания, воды, витаминов и активности.\n\n"
+        "👋 Привет! Я Helpik - твой трекер питания, воды, витаминов и активности.\n\n"
         "📌 Я понимаю такие форматы:\n"
         "🍽 `завтрак: овсянка 200г, мёд 20г`\n"
         "💧 `вода: вода 1300 мл, кофе 600 мл`\n"
@@ -58,16 +58,18 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("🍽 Питание записано!")
 
     elif message.startswith("вода:"):
+        import re
         water_ml = 0
         caffeine_ml = 0
-        if "вода" in message:
-            try:
-                water_ml = int(message.split("вода")[1].split("мл")[0].strip())
-            except: pass
-        if "кофе" in message:
-            try:
-                caffeine_ml = int(message.split("кофе")[1].split("мл")[0].strip())
-            except: pass
+
+        water_match = re.search(r"вода\s*(\d+)\s*мл", message)
+        if water_match:
+            water_ml = int(water_match.group(1))
+
+        coffee_match = re.search(r"кофе\s*(\d+)\s*мл", message)
+        if coffee_match:
+            caffeine_ml = int(coffee_match.group(1))
+
         write_hydration(GOOGLE_CREDS_JSON, SPREADSHEET_ID, date, water_ml, caffeine_ml)
         await update.message.reply_text("💧 Гидратация записана!")
 
@@ -99,3 +101,28 @@ def get_application():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     return app
+
+if __name__ == "__main__":
+    import asyncio
+
+    WEBHOOK_URL = os.getenv("WEBHOOK_URL")
+    PORT = int(os.getenv("PORT", 8443))
+    WEBHOOK_PATH = "/telegram_webhook"
+
+    if not TOKEN or not WEBHOOK_URL or not SPREADSHEET_ID or not GOOGLE_CREDS_JSON:
+        logging.error("Не все переменные окружения установлены! Проверьте TELEGRAM_TOKEN, WEBHOOK_URL, SPREADSHEET_ID, GOOGLE_CREDS_JSON.")
+        exit(1)
+
+    app = get_application()
+
+    async def main():
+        await app.bot.set_webhook(WEBHOOK_URL)
+        await app.run_webhook(
+            listen="0.0.0.0",
+            port=PORT,
+            webhook_path=WEBHOOK_PATH,
+            webhook_url=WEBHOOK_URL,
+            # cert=None,  # Если SSL настроен на уровне прокси, сертификат здесь не нужен
+        )
+
+    asyncio.run(main())
