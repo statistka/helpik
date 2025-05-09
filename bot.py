@@ -109,8 +109,9 @@ if __name__ == "__main__":
 
     port = int(os.environ.get('PORT', 8080))
     app.run_webhook(
-        listen="0.0.0.0",
-        port=port,
-        webhook_url=os.getenv("WEBHOOK_URL"),
-        secret_token=None,
-    )
+    listen="0.0.0.0",
+    port=port,
+    webhook_url=os.getenv("WEBHOOK_URL"),
+    secret_token=None,
+    path="/webhook"  # ← вот это добавляем
+)
