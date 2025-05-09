@@ -3,8 +3,16 @@
 import os
 import json
 import logging
+from datetime import datetime
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    MessageHandler,
+    ContextTypes,
+    filters
+)
+
 from sheets_connector import (
     write_meal,
     write_hydration,
@@ -12,14 +20,16 @@ from sheets_connector import (
     write_workout
 )
 from kcal_parser import parse_kcal
-from datetime import datetime
 
+# Настройка логирования
 logging.basicConfig(level=logging.INFO)
 
+# Переменные окружения
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 SPREADSHEET_ID = os.getenv("SPREADSHEET_ID")
 GOOGLE_CREDS_JSON = json.loads(os.getenv("GOOGLE_CREDS_JSON"))
 
+# Функция для извлечения даты из строки
 def extract_date_and_text(message: str):
     message = message.strip()
     if len(message) >= 11 and message[2] == "." and message[5] == "." and message[10] == ":":
@@ -30,8 +40,7 @@ def extract_date_and_text(message: str):
             pass
     return datetime.now().strftime("%Y-%m-%d"), message
 
-# === Команды ===
-
+# Команда /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "👋 Привет! Я Helpik — твой трекер питания, воды, витаминов и активности.\n\n"
@@ -44,6 +53,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "`08.05.2025: ужин: гречка, яйца 2шт`"
     )
 
+# Основная функция обработки сообщений
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.lower().strip()
     date, message = extract_date_and_text(text)
@@ -91,14 +101,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("Не могу распознать сообщение. Попробуй: 'завтрак: ...', 'вода: ...', 'витамины: ...', 'нагрузка: ...'")
 
-# === Запуск ===
-
+# Запуск приложения в Webhook-режиме
 if __name__ == "__main__":
     app = ApplicationBuilder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-    # Webhook Mode
     port = int(os.environ.get('PORT', 8080))
     app.run_webhook(
         listen="0.0.0.0",
@@ -106,4 +114,3 @@ if __name__ == "__main__":
         webhook_url=os.getenv("WEBHOOK_URL"),
         secret_token=None,
     )
-
