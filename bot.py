@@ -19,15 +19,13 @@ from sheets_connector import (
 )
 from kcal_parser import parse_kcal
 
-# Логирование
 logging.basicConfig(level=logging.INFO)
 
-# Переменные окружения
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 SPREADSHEET_ID = os.getenv("SPREADSHEET_ID")
 GOOGLE_CREDS_JSON = json.loads(os.getenv("GOOGLE_CREDS_JSON"))
+WEBHOOK_URL = os.getenv("WEBHOOK_URL", "https://helpik-production.up.railway.app/webhook")
 
-# Выделение даты
 def extract_date_and_text(message: str):
     message = message.strip()
     if len(message) >= 11 and message[2] == "." and message[5] == "." and message[10] == ":":
@@ -38,20 +36,11 @@ def extract_date_and_text(message: str):
             pass
     return datetime.now().strftime("%Y-%m-%d"), message
 
-# Команда /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "👋 Привет! Я Helpik — твой трекер питания, воды, витаминов и активности.\n\n"
-        "📌 Я понимаю такие форматы:\n"
-        "🍽 `завтрак: овсянка 200г, мёд 20г`\n"
-        "💧 `вода: вода 1300 мл, кофе 600 мл`\n"
-        "💊 `витамины: омега-3, К2`\n"
-        "🏃‍♀️ `нагрузка: бег интенсивный 30 мин, йога 60 мин`\n\n"
-        "📆 Можно указывать дату вручную:\n"
-        "`08.05.2025: ужин: гречка, яйца 2шт`"
+        "👋 Привет! Я Helpik — твой трекер питания, воды, витаминов и активности..."
     )
 
-# Обработка сообщений
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.lower().strip()
     date, message = extract_date_and_text(text)
@@ -99,11 +88,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("Не могу распознать сообщение. Попробуй: 'завтрак: ...', 'вода: ...', 'витамины: ...', 'нагрузка: ...'")
 
-# Запуск через Webhook
 if __name__ == "__main__":
-    port = int(os.environ.get('PORT', 8080))
+    port = int(os.environ.get("PORT", 8080))
 
-    app = ApplicationBuilder().token(TOKEN).build()
+    app = ApplicationBuilder() \
+        .token(TOKEN) \
+        .webhook_path("/webhook") \
+        .build()
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
@@ -111,7 +102,5 @@ if __name__ == "__main__":
     app.run_webhook(
         listen="0.0.0.0",
         port=port,
-        webhook_url="https://helpik-production.up.railway.app"
+        webhook_url=WEBHOOK_URL,
     )
-
-
