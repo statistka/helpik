@@ -1,5 +1,3 @@
-# bot.py
-
 import os
 import json
 import logging
@@ -21,7 +19,7 @@ from sheets_connector import (
 )
 from kcal_parser import parse_kcal
 
-# Настройка логирования
+# Логирование
 logging.basicConfig(level=logging.INFO)
 
 # Переменные окружения
@@ -29,7 +27,7 @@ TOKEN = os.getenv("TELEGRAM_TOKEN")
 SPREADSHEET_ID = os.getenv("SPREADSHEET_ID")
 GOOGLE_CREDS_JSON = json.loads(os.getenv("GOOGLE_CREDS_JSON"))
 
-# Функция для извлечения даты из строки
+# Выделение даты
 def extract_date_and_text(message: str):
     message = message.strip()
     if len(message) >= 11 and message[2] == "." and message[5] == "." and message[10] == ":":
@@ -53,7 +51,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "`08.05.2025: ужин: гречка, яйца 2шт`"
     )
 
-# Основная функция обработки сообщений
+# Обработка сообщений
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.lower().strip()
     date, message = extract_date_and_text(text)
@@ -101,7 +99,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("Не могу распознать сообщение. Попробуй: 'завтрак: ...', 'вода: ...', 'витамины: ...', 'нагрузка: ...'")
 
-# Запуск приложения в Webhook-режиме
+# Запуск через Webhook
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 8080))
 
@@ -110,8 +108,7 @@ if __name__ == "__main__":
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
     app.run_webhook(
-    listen="0.0.0.0",
-    port=port,
-    webhook_url="https://helpik-production.up.railway.app"
-)
-
+        listen="0.0.0.0",
+        port=port,
+        webhook_url=os.getenv("WEBHOOK_URL")  # → https://helpik-production.up.railway.app
+    )
