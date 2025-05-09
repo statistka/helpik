@@ -110,8 +110,8 @@ if __name__ == "__main__":
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
     app.run_webhook(
-        listen="0.0.0.0",
-        port=port,
-        webhook_url="https://helpik-production.up.railway.app/webhook"
-    )
+    listen="0.0.0.0",
+    port=port,
+    webhook_url="https://helpik-production.up.railway.app"
+)
 
