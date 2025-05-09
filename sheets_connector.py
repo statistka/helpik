@@ -12,12 +12,12 @@ def _connect(creds_json: dict, spreadsheet_id: str):
     sheet = client.open_by_key(spreadsheet_id)
     return sheet
 
-def write_meal(creds_json, spreadsheet_id, meal_type: str, description: str, kcal_data: dict):
+def write_meal(creds_json, spreadsheet_id, date: str, meal_type: str, description: str, kcal_data: dict):
     sheet = _connect(creds_json, spreadsheet_id)
     worksheet = sheet.worksheet("Питание")
 
     row = [
-        datetime.now().strftime("%Y-%m-%d"),
+        date,
         meal_type,
         description,
         kcal_data.get("Ккал", ""),
