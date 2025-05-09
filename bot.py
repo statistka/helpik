@@ -105,12 +105,11 @@ def get_application():
 if __name__ == "__main__":
     import asyncio
 
-    WEBHOOK_URL = os.getenv("WEBHOOK_URL")
     PORT = int(os.getenv("PORT", 8443))
-    WEBHOOK_PATH = "/telegram_webhook"
+    WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # например, https://yourdomain.com/telegram_webhook
 
-    if not TOKEN or not WEBHOOK_URL or not SPREADSHEET_ID or not GOOGLE_CREDS_JSON:
-        logging.error("Не все переменные окружения установлены! Проверьте TELEGRAM_TOKEN, WEBHOOK_URL, SPREADSHEET_ID, GOOGLE_CREDS_JSON.")
+    if not TOKEN or not WEBHOOK_URL:
+        logging.error("Не установлены TELEGRAM_TOKEN или WEBHOOK_URL")
         exit(1)
 
     app = get_application()
@@ -120,9 +119,9 @@ if __name__ == "__main__":
         await app.run_webhook(
             listen="0.0.0.0",
             port=PORT,
-            webhook_path=WEBHOOK_PATH,
             webhook_url=WEBHOOK_URL,
-            # cert=None,  # Если SSL настроен на уровне прокси, сертификат здесь не нужен
+            cert=None  # или путь к сертификату, если нужен
         )
 
     asyncio.run(main())
+
