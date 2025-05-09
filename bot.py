@@ -32,7 +32,7 @@ GOOGLE_CREDS_JSON = json.loads(os.getenv("GOOGLE_CREDS_JSON"))
 # Railway предоставляет публичный URL в RAILWAY_STATIC_URL (или задайте вручную)
 RAILWAY_URL = os.getenv("RAILWAY_STATIC_URL")  # например yourproject.up.railway.app
 WEBHOOK_PATH = "/webhook"
-WEBHOOK_URL = f"https://{RAILWAY_URL}{WEBHOOK_PATH}"
+WEBHOOK_URL = "https://{RAILWAY_URL}{WEBHOOK_PATH}"
 
 app = FastAPI()
 bot = Bot(token=TOKEN)
