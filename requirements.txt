@@ -3,3 +3,5 @@ aiohttp==3.9.3
 httpx==0.27.0
 gspread==5.12.0
 google-auth==2.29.0
+fastapi[standard]
+uvicorn
