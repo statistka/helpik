@@ -60,14 +60,18 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif message.startswith("вода:"):
         water_ml = 0
         caffeine_ml = 0
-        if "вода" in message:
-            try:
-                water_ml = int(message.split("вода")[1].split("мл")[0].strip())
-            except: pass
-        if "кофе" in message:
-            try:
-                caffeine_ml = int(message.split("кофе")[1].split("мл")[0].strip())
-            except: pass
+
+        for part in message.split(","):
+            part = part.strip()
+            if part.startswith("вода"):
+                try:
+                    water_ml = int(part.split("вода")[1].split("мл")[0].strip())
+                except: pass
+            elif part.startswith("кофе"):
+                try:
+                    caffeine_ml = int(part.split("кофе")[1].split("мл")[0].strip())
+                except: pass
+
         write_hydration(GOOGLE_CREDS_JSON, SPREADSHEET_ID, date, water_ml, caffeine_ml)
         await update.message.reply_text("💧 Гидратация записана!")
 
@@ -81,6 +85,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parts = text_body.split(",")
         workout_data = {}
         for part in parts:
+            part = part.strip()
             for activity in ["разминка", "бег интенсивный", "бег лёгкий", "силовая", "йога", "велосипед", "плавание", "хайкинг", "ходьба"]:
                 if activity in part:
                     try:
@@ -92,7 +97,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("🏃‍♀️ Нагрузка записана!")
 
     else:
-        await update.message.reply_text("Не могу распознать сообщение. Попробуй: 'завтрак: ...', 'вода: ...', 'витамины: ...', 'нагрузка: ...'")
+        await update.message.reply_text(
+            "❓ Не могу распознать сообщение. Форматы:\n"
+            "🍽 завтрак: ...\n"
+            "💧 вода: ...\n"
+            "💊 витамины: ...\n"
+            "🏃 нагрузка: ...\n"
+            "📅 Можно указать дату: `08.05.2025: завтрак: ...`"
+        )
 
 if __name__ == "__main__":
     app = ApplicationBuilder().token(TOKEN).build()
